@@ -324,8 +324,6 @@ def routine():
             continue
 
         if r.json()['state'] == 'SUCCEEDED':
-            window = gw.getWindowsWithTitle('League of Legends')[0]
-            window.moveTo(500, 100)
             break
 
     summonerId = r.json()['summonerId']
