@@ -144,7 +144,7 @@ def getPickPrio():
                         if aChamp['rankedPlayEnabled']:
                             pickPrio[r].append(aChamp['id'])
     except:
-        resetConfig()
+        restoreConfig()
 
 def getRole():
     lobby = request('get', '/lol-lobby/v2/lobby').json()
