@@ -22,6 +22,12 @@ threadLock = th.Lock()
 threads = {}
 kill = False
 
+role = {"sup": "UTILITY", "mid": "MIDDLE", "bot": "BOTTOM", "top": "TOP", "jungle": "JUNGLE", "fill": "FILL"}
+roleName = {}
+
+queues = {"Draft Pick":"400", "Solo/Duo":"420", "Blind Pick":"430", "Flex":"440", "Aram":"450", "TFT Normal":"1090", "TFT Ranked":"1100"}
+drafts = ["Draft Pick", "Solo/Duo", "Flex"]
+
 champions = {"Annie":"1","Olaf":"2","Galio":"3","Twisted Fate":"4","Xin Zhao":"5","Urgot":"6","LeBlanc":"7","Vladimir":"8","Fiddlesticks":"9","Kayle":"10","Master Yi":"11","Alistar":"12","Ryze":"13","Sion":"14","Sivir":"15","Soraka":"16","Teemo":"17","Tristana":"18","Warwick":"19","Nunu":"20","Miss Fortune":"21","Ashe":"22","Tryndamere":"23","Jax":"24","Morgana":"25","Zilean":"26","Singed":"27","Evelynn":"28","Twitch":"29","Karthus":"30","ChoGath":"31","Amumu":"32","Rammus":"33","Anivia":"34","Shaco":"35","Dr. Mundo":"36","Sona":"37","Kassadin":"38","Irelia":"39","Janna":"40","Gangplank":"41","Corki":"42","Karma":"43","Taric":"44","Veigar":"45","Trundle":"48","Swain":"50","Caitlyn":"51","Blitzcrank":"53","Malphite":"54","Katarina":"55","Nocturne":"56","Maokai":"57","Renekton":"58","Jarvan IV":"59","Elise":"60","Orianna":"61","Wukong":"62","Brand":"63","Lee Sin":"64","Vayne":"67","Rumble":"68","Cassiopeia":"69","Skarner":"72","Heimerdinger":"74","Nasus":"75","Nidalee":"76","Udyr":"77","Poppy":"78","Gragas":"79","Pantheon":"80","Ezreal":"81","Mordekaiser":"82","Yorick":"83","Akali":"84","Kennen":"85","Garen":"86","Leona":"89","Malzahar":"90","Talon":"91","Riven":"92","KogMaw":"96","Shen":"98","Lux":"99","Xerath":"101","Shyvana":"102","Ahri":"103","Graves":"104","Fizz":"105","Volibear":"106","Rengar":"107","Varus":"110","Nautilus":"111","Viktor":"112","Sejuani":"113","Fiora":"114","Ziggs":"115","Lulu":"117","Draven":"119","Hecarim":"120","KhaZix":"121","Darius":"122","Jayce":"126","Lissandra":"127","Diana":"131","Quinn":"133","Syndra":"134","Aurelion Sol":"136","Kayn":"141","Zoe":"142","Zyra":"143","KaiSa":"145","Seraphine":"147","Gnar":"150","Zac":"154","Yasuo":"157","VelKoz":"161","Taliyah":"163","Camille":"164","Braum":"201","Jhin":"202","Kindred":"203","Jinx":"222","Tahm Kench":"223","Viego":"234","Senna":"235","Lucian":"236","Zed":"238","Kled":"240","Ekko":"245","Qiyana":"246","Vi":"254","Aatrox":"266","Nami":"267","Azir":"268","Yuumi":"350","Samira":"360","Thresh":"412","Illaoi":"420","RekSai":"421","Ivern":"427","Kalista":"429","Bard":"432","Rakan":"497","Xayah":"498","Ornn":"516","Sylas":"517","Neeko":"518","Aphelios":"523","Rell":"526","Pyke":"555","Yone":"777","Sett":"875","Lillia":"876"}
 
 banPrio = {}
@@ -30,7 +36,7 @@ pickPrio = {}
 lastPhase = ""
 phase = ""
 
-standartConfig = '{"roles":["mid", "top"], "dir":"C://Riot Games//League of Legends", "autoChampSelect":"True", "banPrio":{"mid":["Zed","Yasuo"],"top":["Aatrox","Yorick"],"jungle":["Master Yi","Nocturne"],"sup":["Morgana","Seraphine"],"bot":["Samira","Ashe"]}, "pickPrio":{"mid":["Yone","Yasuo"],"top":["Garen","Malphite"],"jungle":["Zac","Udyr"],"sup":["Lux","Brand"],"bot":["Caitlyn","Miss Fortune"]}}'
+standartConfig = '{"roles":["mid", "top"], "dir":"C://Riot Games//League of Legends", "queue":"Solo/Duo", "autoChampSelect":"True", "banPrio":{"mid":["Zed","Yasuo"],"top":["Aatrox","Yorick"],"jungle":["Master Yi","Nocturne"],"sup":["Morgana","Seraphine"],"bot":["Samira","Ashe"]}, "pickPrio":{"mid":["Yone","Yasuo"],"top":["Garen","Malphite"],"jungle":["Zac","Udyr"],"sup":["Lux","Brand"],"bot":["Caitlyn","Miss Fortune"]}}'
 
 #################################################################################################################################################################################################################
 
@@ -49,6 +55,10 @@ def restoreConfig():
 file = open('config.json','a+')
 if os.path.getsize('config.json') == 0:
     file.write(standartConfig)
+    file.close()
+    print("Config created pls check it and restart the script")
+    sleep(10)
+    sys.exit()
 file.close()
 
 try:
@@ -57,9 +67,6 @@ try:
 except:
     restoreConfig()
 
-
-role = {"sup": "UTILITY", "mid": "MIDDLE", "bot": "BOTTOM", "top": "TOP", "jungle": "JUNGLE", "fill": "FILL"}
-roleName = {}
 for key in role:
     roleName[role[key].lower()] = key
 
@@ -95,6 +102,12 @@ try:
         role[config['roles'][0]],
         role[config['roles'][1]]
     ]
+except:
+    restoreConfig()
+
+#################################################################################################################################################################################################################
+try:
+    queueId = queues[config['queue']]
 except:
     restoreConfig()
 
@@ -182,7 +195,8 @@ def search():
     request('post','/lol-lobby/v2/lobby/matchmaking/search')
 
 def lobby():
-    if getRole() == 0:
+    global drafts
+    if getRole() == 0 and config['queue'] in drafts:
         print("Wrong Roles set...")
         setRole()
         print("Now your roles fit!")
@@ -194,7 +208,8 @@ def lobby():
     return False
 
 def queue():
-    request('post','/lol-lobby/v2/lobby','',{"queueId": 420})
+    global queueId
+    request('post','/lol-lobby/v2/lobby','',{"queueId":queueId})
 
 def readyCheck():
     request('post', '/lol-matchmaking/v1/ready-check/accept')
