@@ -13,6 +13,18 @@ fill
 League Path Format:
 Drive://path...//Riot Games//League of Legends
 
+Queue Types:
+Draft Pick
+Solo/Duo
+Blind Pick
+Flex
+Aram
+TFT Normal
+TFT Ranked
+
+autoChampSelect:
+True/False
+
 Champions:
 Aatrox
 Ahri
