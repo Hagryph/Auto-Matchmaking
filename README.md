@@ -9,6 +9,7 @@ top
 jungle
 bot
 fill
+random
 
 League Path Format:
 Drive://path...//Riot Games//League of Legends
