@@ -2,11 +2,11 @@
 A tool for League of Legends - Autoqueue, Auto Role, Auto Accept, Auto Champselect
 
 # Functions
-Auto Queue (Draft Pick, Solo/Duo, Blind Pick, Flex, Aram, TFT Normal, TFT Ranked)
-Auto Role
-Auto Accept
-Auto Pick/Ban
-Auto Requeue
+- Auto Queue (Draft Pick, Solo/Duo, Blind Pick, Flex, Aram, TFT Normal, TFT Ranked)
+- Auto Role
+- Auto Accept
+- Auto Pick/Ban
+- Auto Requeue
 
 # Config
 Roles:
