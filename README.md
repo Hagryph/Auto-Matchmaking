@@ -30,7 +30,10 @@ Aram,
 TFT Normal,
 TFT Ranked
 
-autoChampSelect:
+autoPick:
+True/False
+
+autoBan:
 True/False
 
 Champions:
