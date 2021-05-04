@@ -5,8 +5,8 @@ from base64 import b64encode
 from time import sleep
 import os
 import sys
-import pygetwindow as gw
 import threading as th
+import random
 
 #################################################################################################################################################################################################################
 
@@ -21,9 +21,12 @@ threadLock = th.Lock()
 
 threads = {}
 kill = False
+killed = False
 
-role = {"sup": "UTILITY", "mid": "MIDDLE", "bot": "BOTTOM", "top": "TOP", "jungle": "JUNGLE", "fill": "FILL"}
+role = {"sup": "UTILITY", "mid": "MIDDLE", "bot": "BOTTOM", "top": "TOP", "jungle": "JUNGLE", "fill": "FILL", "random": "random"}
+randomRole = ["UTILITY", "MIDDLE", "BOTTOM", "TOP", "JUNGLE"]
 roleName = {}
+roleChanged = True
 
 queues = {"Draft Pick":"400", "Solo/Duo":"420", "Blind Pick":"430", "Flex":"440", "Aram":"450", "TFT Normal":"1090", "TFT Ranked":"1100"}
 drafts = ["Draft Pick", "Solo/Duo", "Flex"]
@@ -36,7 +39,7 @@ pickPrio = {}
 lastPhase = ""
 phase = ""
 
-standartConfig = '{"roles":["mid", "top"], "dir":"C://Riot Games//League of Legends", "queue":"Solo/Duo", "autoChampSelect":"True", "banPrio":{"mid":["Zed","Yasuo"],"top":["Aatrox","Yorick"],"jungle":["Master Yi","Nocturne"],"sup":["Morgana","Seraphine"],"bot":["Samira","Ashe"]}, "pickPrio":{"mid":["Yone","Yasuo"],"top":["Garen","Malphite"],"jungle":["Zac","Udyr"],"sup":["Lux","Brand"],"bot":["Caitlyn","Miss Fortune"]}}'
+standartConfig = '{"roles":["mid", "top"], "dir":"C://Riot Games//League of Legends", "queue":"Solo/Duo", "autoPick":"True", "autoBan":"True", "banPrio":{"mid":["Zed","Yasuo"],"top":["Aatrox","Yorick"],"jungle":["Master Yi","Nocturne"],"sup":["Morgana","Seraphine"],"bot":["Samira","Ashe"]}, "pickPrio":{"mid":["Yone","Yasuo"],"top":["Garen","Malphite"],"jungle":["Zac","Udyr"],"sup":["Lux","Brand"],"bot":["Caitlyn","Miss Fortune"]}}'
 
 #################################################################################################################################################################################################################
 
@@ -71,10 +74,16 @@ for key in role:
     roleName[role[key].lower()] = key
 
 try:
-    if config['roles'][0] == "fill":
-        config['roles'][1] = "fill"
-
     changed = False
+
+    if config['roles'][0] == "fill" and config['roles'][1] != "fill":
+        config['roles'][1] = "fill"
+        changed = True
+
+    if config['roles'][0] == "random" and config['roles'][1] != "random":
+        config['roles'][1] = "random"
+        changed = True
+
     keys = list(role.keys())
 
     if config['roles'][0] not in keys:
@@ -97,7 +106,7 @@ try:
         print("Config restored pls check it and restart the script")
         sleep(10)
         sys.exit()
-     
+
     rolePrio = [
         role[config['roles'][0]],
         role[config['roles'][1]]
@@ -114,7 +123,7 @@ except:
 #################################################################################################################################################################################################################
 
 try:
-    if config['autoChampSelect'] == "True":
+    if config['autoBan'] == "True":
         for r in config['banPrio']:
             banPrio[r] = []
             for champ in config['banPrio'][r]:
@@ -269,7 +278,9 @@ def getBanID(ownCellID):
 def ban(id, ownCellID, banID):
     url = '/lol-champ-select/v1/session/actions/%d' % banID
     data = {'championId': id}
+    sleep(2)
     request('patch', url, '', data)
+    sleep(1)
     request('post', url+'/complete', '', data)
 
 def getPickID(ownCellID):
@@ -307,22 +318,26 @@ def getPick(position):
 def pick(id, ownCellID, pickID):
     url = '/lol-champ-select/v1/session/actions/%d' % pickID
     data = {'championId': id}
+    sleep(2)
     request('patch', url, '', data)
+    sleep(1)
     request('post', url+'/complete', '', data)
 
 def pick_ban():
+    global config
+
     phase = getPhase()
     if phase:
         ownCellID = getCellID()
         if ownCellID != -1:
             position = getPosition(ownCellID)
-            if phase == "ban":
+            if phase == "ban" and config['autoBan']:
                 banID = getBanID(ownCellID)
                 if banID:
                     id = getBan(position)
                     if id:
                         ban(id, ownCellID, banID)
-            elif phase == "pick":
+            elif phase == "pick" and config['autoPick']:
                 pickID = getPickID(ownCellID)
                 if pickID:
                     id = getPick(position)
@@ -333,36 +348,56 @@ def pick_ban():
 
 def routine():
     global kill
+    global killed
     global threadLock
     global lastPhase
     global phase
+    global rolePrio
+    global randomRole
 
     while True:
         sleep(1)
-        r = request('get', '/lol-login/v1/session')
+        try:
+            r = request('get', '/lol-login/v1/session')
+        except:
+            threadLock.acquire()
+            killed = True
+            threadLock.release()
+            return
 
         if r.status_code != 200:
             print(r.status_code)
             continue
 
         if r.json()['state'] == 'SUCCEEDED':
-            try:
-                window = gw.getWindowsWithTitle('League of Legends')[0]
-                window.moveTo(500, 100)
-            except:
-                pass
             break
 
-    summonerId = r.json()['summonerId']
+    try:
+        summonerId = r.json()['summonerId']
+    except:
+        threadLock.acquire()
+        killed = True
+        threadLock.release()
+        return
 
     accepted = False
     searching = False
     
     try:
-        if config['autoChampSelect'] == "True":
+        if config['autoPick'] == "True":
             getPickPrio()
     except:
         restoreConfig()
+
+    if config["roles"][0] == "random":
+        pos = random.randint(0,4)
+        rolePrio[0] = randomRole[pos]
+        pos2 = pos
+        while pos2 == pos:
+            pos2 = random.randint(0,4)
+        rolePrio[1] = randomRole[pos2]
+
+    print('Connection to League of Legends successful')
 
     threadLock.acquire()
     while not kill:
@@ -383,11 +418,7 @@ def routine():
                     print("Readycheck accepted")
 
             elif phase == 'ChampSelect':
-                try:
-                    if config['autoChampSelect'] == "True":
-                        pick_ban()
-                except:
-                    restoreConfig()
+                pick_ban()
 
             elif phase == "None" or phase == "EndOfGame":
                 if phase != lastPhase:
@@ -400,6 +431,7 @@ def routine():
 
             elif phase == 'InProgress':
                 sleep(10)
+                return
 
             lastPhase = phase
         except:
@@ -413,6 +445,7 @@ def routine():
 
 def main():
     global kill
+    global killed
     global protocol
     global username
     global port
@@ -433,9 +466,8 @@ def main():
                 if not os.path.isfile(lockpath):
                     continue
 
-                print('Found running League of Legends, dir', config["dir"])
                 lockfile = open(r'%s\lockfile' % config["dir"], 'r')
-                sleep(20)
+                sleep(3)
         except:
             restoreConfig()
 
@@ -464,12 +496,18 @@ def main():
         threads[1].start()
 
         while True:
+            threadLock.acquire()
             if not os.path.isfile(lockpath):
-                threadLock.acquire()
                 kill = True
                 threadLock.release()
                 threads[1].join()
                 break
+            elif killed:
+                killed = False
+                threadLock.release()
+                sleep(3)
+                break
+            threadLock.release()
 
             sleep(1)
 
