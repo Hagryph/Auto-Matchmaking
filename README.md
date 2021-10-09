@@ -40,6 +40,7 @@ Champions:
 Aatrox
 Ahri
 Akali
+Akshan
 Alistar
 Amumu
 Anivia
@@ -170,6 +171,7 @@ Varus
 Vayne
 Veigar
 VelKoz
+Vex
 Vi
 Viego
 Viktor
